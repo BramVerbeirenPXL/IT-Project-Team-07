@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, waitFor, act } from '@testing-library/react-native';
+import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import MobileMapView from '../components/MobileMapView';
 import * as Location from 'expo-location';
 import { Alert } from 'react-native';
-import sharedData from '../../shared/data';
+import data from '../../shared/data';
+import { useNavigation } from '@react-navigation/native';
 
 // Mock the Location module and Alert
 jest.mock('expo-location', () => ({
@@ -11,6 +12,18 @@ jest.mock('expo-location', () => ({
   getCurrentPositionAsync: jest.fn(),
 }));
 
+// Mock useNavigation
+jest.mock('@react-navigation/native', () => ({
+  useNavigation: jest.fn(),
+}));
+
+jest.mock('../../shared/data', () => ({
+  getTrees: jest.fn(),
+}));
+const mockTrees = [
+  { id: 1, name: 'Tree 1', latitude: 50.8503, longitude: 4.3517 },
+  { id: 2, name: 'Tree 2', latitude: 50.851, longitude: 4.352 },
+];
 // Mock data for user location
 const mockLocation = {
   coords: {
@@ -19,12 +32,20 @@ const mockLocation = {
   },
 };
 
+let trees = []
+// Mock navigation.navigate
+const mockNavigate = jest.fn();
+useNavigation.mockReturnValue({
+  navigate: mockNavigate,
+});
+
 describe('MobileMapView', () => {
   let alertSpy;
 
   beforeEach(() => {
     Location.requestForegroundPermissionsAsync.mockResolvedValue({ status: 'granted' });
     Location.getCurrentPositionAsync.mockResolvedValue(mockLocation);
+    data.getTrees.mockResolvedValue(mockTrees);
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
   });
 
@@ -58,8 +79,8 @@ describe('MobileMapView', () => {
   it('renders shared data markers', async () => {
     const { getByTestId } = render(<MobileMapView />);
     await act(async () => {
-      await waitFor(() => {
-        sharedData.forEach(tree => {
+      await waitFor(() => {        
+        mockTrees.forEach(tree => {
           expect(getByTestId(`marker-${tree.id}`)).toBeTruthy();
         });
       });
@@ -69,7 +90,7 @@ describe('MobileMapView', () => {
   it('shows alert when location permission is denied', async () => {
     Location.requestForegroundPermissionsAsync.mockResolvedValueOnce({ status: 'denied' });
 
-    const { getByTestId } = render(<MobileMapView />);
+    render(<MobileMapView />);
     await act(async () => {
       await waitFor(() => {
         expect(alertSpy).toHaveBeenCalledWith(
@@ -114,10 +135,22 @@ describe('MobileMapView', () => {
     Location.requestForegroundPermissionsAsync.mockResolvedValueOnce({ status: 'granted' });
     Location.getCurrentPositionAsync.mockResolvedValueOnce(null);
 
+    const { queryByTestId } = render(<MobileMapView />);
+    await act(async () => {
+      await waitFor(() => {
+        expect(queryByTestId('your-location')).toBeNull();
+      });
+    });
+  });
+
+  it('navigates to TreeDetails view when Callout is pressed', async () => {
     const { getByTestId } = render(<MobileMapView />);
     await act(async () => {
       await waitFor(() => {
-        expect(() => getByTestId('your-location')).toThrow('Unable to find an element with testID: your-location');
+        const treeId = mockTrees[0].id;
+        const callout = getByTestId(`callout=${treeId}`);
+        fireEvent.press(callout);
+        expect(mockNavigate).toHaveBeenCalledWith('TreeDetails', { tree: mockTrees[0] });
       });
     });
   });

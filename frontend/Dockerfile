@@ -11,8 +11,13 @@ RUN npm install --verbose
 COPY shared /app/shared
 COPY web /app
 
+
+RUN find . -type f -name "*.js" -exec sed -i 's|../../../../shared|/app/shared|g' {} +
+RUN find . -type f -name "*.js" -exec sed -i 's|../../../shared|/app/shared|g' {} +
+# RUN echo "REACT_APP_EXTERNAL_IP=https://mutualism-backend-359585659782.europe-west1.run.app" > /app/.env
 # Run the build process
 RUN npm run build --prefix /app
+
 
 # Stage 2: Serve the React app using nginx
 FROM nginx:alpine

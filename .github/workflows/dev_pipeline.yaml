@@ -1,4 +1,4 @@
-name: Sonaqube Quality Gate Check
+name: SonaRqube Quality Gate Check
 
 on:
   pull_request:

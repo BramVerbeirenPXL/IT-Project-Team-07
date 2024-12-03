@@ -2,15 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import "./LoginView.css";
 
-/*
-Wat er nog moet gebeuren:
-- testen schrijven
-*/
-
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState(null);  // State voor foutmeldingen
+  const [error, setError] = useState(null);  
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -25,8 +20,8 @@ const Login = () => {
     formDetails.append('password', password);
 
     try {
-      const baseUrl = process.env.REACT_APP_EXTERNAL_IP || 'localhost';
-      const response = await fetch(`http://${baseUrl}:8000/login`, {
+      const baseUrl = process.env.REACT_APP_EXTERNAL_IP || 'http://localhost:8000';
+      const response = await fetch(`${baseUrl}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -35,7 +30,8 @@ const Login = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();        
+        const data = await response.json();
+
         sessionStorage.setItem('token', data.data.access_token);
         navigate('/map');
       } else if (response.status === 401) {

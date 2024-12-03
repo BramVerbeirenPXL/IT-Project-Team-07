@@ -162,3 +162,67 @@ def test_revoke_already_revoked_token(client):
         "data": None
         }
     }
+
+def test_get_trees_empty(client):
+    """Test het ophalen van bomen wanneer er nog geen bomen zijn toegevoegd."""
+    response = client.get("/trees")
+    assert response.status_code == 200
+    assert response.json() == []
+
+def test_create_tree(client):
+    """Test het aanmaken van een nieuwe boom."""
+    tree_data = {
+        "name": "Oak Tree",
+        "description": "A majestic oak tree.",
+        "latitude": 51.1234,
+        "longitude": 4.5678
+    }
+    response = client.post("/trees", json=tree_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == tree_data["name"]
+    assert data["description"] == tree_data["description"]
+    assert data["latitude"] == tree_data["latitude"]
+    assert data["longitude"] == tree_data["longitude"]
+
+def test_get_trees_with_data(client):
+    """Test het ophalen van bomen wanneer er al bomen zijn toegevoegd."""
+    tree_data = {
+        "name": "Birch Tree",
+        "description": "A slender birch tree.",
+        "latitude": 50.9876,
+        "longitude": 3.4567
+    }
+    client.post("/trees", json=tree_data)
+
+    response = client.get("/trees")
+    assert response.status_code == 200
+    trees = response.json()
+    assert len(trees) == 1
+    assert trees[0]["name"] == tree_data["name"]
+    assert trees[0]["description"] == tree_data["description"]
+
+def test_delete_tree(client):
+    """Test het verwijderen van een boom."""
+    tree_data = {
+        "name": "Pine Tree",
+        "description": "A tall pine tree.",
+        "latitude": 52.3456,
+        "longitude": 5.6789
+    }
+    create_response = client.post("/trees", json=tree_data)
+    tree_id = create_response.json()["id"]
+
+    delete_response = client.delete(f"/trees/{tree_id}")
+    assert delete_response.status_code == 200
+    assert delete_response.json() == {"message": "Tree deleted successfully"}
+
+    get_response = client.get("/trees")
+    assert get_response.status_code == 200
+    assert len(get_response.json()) == 0
+
+def test_delete_nonexistent_tree(client):
+    """Test het verwijderen van een niet-bestaande boom."""
+    response = client.delete("/trees/999")
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Tree not found"}

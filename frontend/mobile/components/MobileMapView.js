@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Alert, Image } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import { StyleSheet, View, Alert, Image, Text } from 'react-native';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
-import sharedData from '../../shared/data';
+import data from '../../shared/data';
 import treeIcon from '../assets/tree-icon.png';
+import { useNavigation } from '@react-navigation/native';
+import infoIcon from '../assets/info.png';
 
 const MobileMapView = () => {
   const [location, setLocation] = useState(null);
+  const [trees, setTrees] = useState([]);
   const [region, setRegion] = useState({
     latitude: 50.95306,
     longitude: 5.352692,
     latitudeDelta: 0.0922,
     longitudeDelta: 0.0421,
   });
+  const navigation = useNavigation();
 
   useEffect(() => {
     (async () => {
@@ -33,8 +37,12 @@ const MobileMapView = () => {
         });
       }
     })();
+    const fetchTrees = async () => {
+      const fetchedTrees = await data.getTrees(true);
+      setTrees(fetchedTrees);
+    };
+    fetchTrees();
   }, []);
-
   return (
     <View style={styles.container}>
       <MapView
@@ -43,7 +51,7 @@ const MobileMapView = () => {
         onRegionChangeComplete={setRegion}
         testID="map-view"
       >
-        {sharedData.map(tree => (
+        {trees.map(tree => (
           <Marker
             key={tree.id}
             testID={`marker-${tree.id}`}
@@ -57,6 +65,13 @@ const MobileMapView = () => {
               source={treeIcon}
               style={styles.marker}
             />
+            <Callout testID={`callout=${tree.id}`} onPress={() => navigation.navigate('TreeDetails', { tree })}>
+              <View style={styles.callout}>
+                <Text style={styles.infoText}>
+                  <Image source={infoIcon} style={styles.infoImage}/>
+                </Text>
+              </View>
+            </Callout>
           </Marker>
         ))}
         {location && (
@@ -86,6 +101,19 @@ const styles = StyleSheet.create({
   marker: {
     width: 30,
     height: 30,
+  },
+  infoImage: {
+    width: 40,
+    height: 40,
+  },
+  callout: {
+    width: 40,
+    height: 70,
+  },
+  infoText: {
+    width: 40,
+    height: 70,
+    alignItems: 'center',
   }
 });
 

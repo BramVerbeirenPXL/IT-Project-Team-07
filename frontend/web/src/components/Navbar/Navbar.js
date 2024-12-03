@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import "./Navbar.css"
 import { useNavigate } from 'react-router-dom';
-import "@fontsource/jost";
 
 
 const Navbar = () => {
@@ -14,8 +13,8 @@ const Navbar = () => {
       if (!token) return;
 
       try {
-        const baseUrl = process.env.REACT_APP_EXTERNAL_IP || 'localhost';
-        const response = await fetch(`http://${baseUrl}:8000/verify-token/${token}`, {
+        const baseUrl = process.env.REACT_APP_EXTERNAL_IP || 'http://localhost:8000';
+        const response = await fetch(`${baseUrl}/verify-token/${token}`, {
           method: 'GET',
         });
 
@@ -25,7 +24,7 @@ const Navbar = () => {
           setIsAuthenticated(false);
         }
       } catch (error) {
-        console.error("Er is een fout opgetreden bij het verifiëren van de token:", error);
+        console.error("Er is een fout opgetreden bij het verifiëren va  n de token:", error);
         setIsAuthenticated(false);
       }
     };
@@ -38,8 +37,8 @@ const Navbar = () => {
     console.log("Logging out...");
     try {
       const token = sessionStorage.getItem('token');
-      const baseUrl = process.env.REACT_APP_EXTERNAL_IP || 'localhost';
-      await fetch(`http://${baseUrl}:8000/revoke-token/${token}`, {
+      const baseUrl = process.env.REACT_APP_EXTERNAL_IP || 'http://localhost:8000';
+      await fetch(`${baseUrl}/revoke-token/${token}`, {
         method: 'POST',
       });
       sessionStorage.removeItem('token');
@@ -48,10 +47,8 @@ const Navbar = () => {
       console.error("Er is een fout opgetreden bij het revoken van de token:", error);
     }
 
-    // Zet de authenticatiestatus naar false
     setIsAuthenticated(false);
 
-    // Navigeren naar de homepagina (of loginpagina)
     navigate("/");
   };
 
