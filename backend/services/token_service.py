@@ -1,5 +1,6 @@
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
+from database import SessionLocal
 from datetime import datetime, timedelta, timezone
 from models.revoked_token_model import RevokedToken
 from fastapi import FastAPI, Depends, HTTPException, status

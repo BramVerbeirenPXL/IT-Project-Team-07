@@ -59,8 +59,8 @@ def test_create_tree(db):
     assert tree is not None
     assert tree.name == "Maple Tree"
     assert tree.description == "A beautiful maple tree."
-    assert tree.latitude == 50.1234
-    assert tree.longitude == 4.5678
+    assert float(tree.latitude) == 50.1234
+    assert float(tree.longitude) == 4.5678
     assert isinstance(tree.added_at, datetime)
 
 def test_read_trees(db):

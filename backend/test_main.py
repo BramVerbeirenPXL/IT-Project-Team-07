@@ -9,9 +9,9 @@ from database import Base, get_db
 
 # SQLite in-memory database voor de tests
 SQLALCHEMY_DATABASE_URL = "sqlite:///testing.db"
-
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 
 def override_get_db():
     db = TestingSessionLocal()
@@ -20,7 +20,9 @@ def override_get_db():
     finally:
         db.close()
 
+
 app.dependency_overrides[get_db] = override_get_db
+
 
 @pytest.fixture(scope="function")
 def client():
@@ -31,6 +33,7 @@ def client():
         # Droppen van de tabellen na de tests
         Base.metadata.drop_all(bind=engine)
 
+
 def test_register_user(client):
     response = client.post(
         "/register",
@@ -40,7 +43,7 @@ def test_register_user(client):
     assert response.json() == {
         "success": True,
         "message": "User created successfully",
-        "data": {"user_id": 1, "username": "testuser"}
+        "data": {"user_id": 1, "username": "testuser"},
     }
 
 
@@ -50,15 +53,14 @@ def test_register_user_already_exists(client):
         json={"username": "testuser", "password": "testpassword"},
     )
     response = client.post(
-        "/register",
-        json={"username": "testuser", "password": "otherpassword"}
+        "/register", json={"username": "testuser", "password": "otherpassword"}
     )
     assert response.status_code == 400
     assert response.json() == {
         "detail": {
-        "success": False,
-        "message": "Username already registered",
-        "data": None
+            "success": False,
+            "message": "Username already registered",
+            "data": None,
         }
     }
 
@@ -90,9 +92,9 @@ def test_login_user_wrong_password(client):
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
     assert response.json() == {
         "detail": {
-        "success": False,
-        "message": "Incorrect username or password",
-        "data": None
+            "success": False,
+            "message": "Incorrect username or password",
+            "data": None,
         }
     }
 
@@ -113,7 +115,7 @@ def test_verify_token(client):
     assert response.json() == {
         "success": True,
         "message": "Token is valid",
-        "data": None
+        "data": None,
     }
 
 
@@ -121,14 +123,14 @@ def test_verify_invalid_token(client):
     invalid_token = "invalidtoken123"
     response = client.get(f"/verify-token/{invalid_token}")
     assert response.status_code == 401
-    assert response.json() == {
-        'detail': 'Token is invalid or expired.'
-    }
+    assert response.json() == {"detail": "Token is invalid or expired."}
 
 
 def test_revoke_token(client):
     client.post("/register", json={"username": "testuser", "password": "testpassword"})
-    login_response = client.post("/login", data={"username": "testuser", "password": "testpassword"})
+    login_response = client.post(
+        "/login", data={"username": "testuser", "password": "testpassword"}
+    )
     token = login_response.json()["data"]["access_token"]
 
     response = client.post(f"/revoke-token/{token}")
@@ -136,19 +138,19 @@ def test_revoke_token(client):
     assert response.json() == {
         "success": True,
         "message": "Token has been revoked.",
-        "data": None
+        "data": None,
     }
 
     verify_response = client.get(f"/verify-token/{token}")
     assert verify_response.status_code == 401
-    assert verify_response.json() == {
-        'detail': 'Token has been revoked.'
-    }
+    assert verify_response.json() == {"detail": "Token has been revoked."}
 
 
 def test_revoke_already_revoked_token(client):
     client.post("/register", json={"username": "testuser", "password": "testpassword"})
-    login_response = client.post("/login", data={"username": "testuser", "password": "testpassword"})
+    login_response = client.post(
+        "/login", data={"username": "testuser", "password": "testpassword"}
+    )
     token = login_response.json()["data"]["access_token"]
 
     client.post(f"/revoke-token/{token}")
@@ -157,11 +159,12 @@ def test_revoke_already_revoked_token(client):
     assert second_revoke_response.status_code == 400
     assert second_revoke_response.json() == {
         "detail": {
-        "success": False,
-        "message": "Token has already been revoked.",
-        "data": None
+            "success": False,
+            "message": "Token has already been revoked.",
+            "data": None,
         }
     }
+
 
 def test_get_trees_empty(client):
     """Test het ophalen van bomen wanneer er nog geen bomen zijn toegevoegd."""
@@ -169,11 +172,14 @@ def test_get_trees_empty(client):
     assert response.status_code == 200
     assert response.json() == []
 
+
 def test_create_tree(client):
     """Test het aanmaken van een nieuwe boom."""
     # Simuleer registratie en login
     client.post("/register", json={"username": "testuser", "password": "testpassword"})
-    login_response = client.post("/login", data={"username": "testuser", "password": "testpassword"})
+    login_response = client.post(
+        "/login", data={"username": "testuser", "password": "testpassword"}
+    )
     token = login_response.json()["data"]["access_token"]
 
     # Voeg de header toe aan de aanvraag
@@ -182,20 +188,25 @@ def test_create_tree(client):
         "name": "Oak Tree",
         "description": "A majestic oak tree.",
         "latitude": 51.1234,
-        "longitude": 4.5678
+        "longitude": 4.5678,
+        "height": 0,
+        "diameter": 0,
     }
     response = client.post("/trees", json=tree_data, headers=headers)
     assert response.status_code == 200
     data = response.json()
     assert data["name"] == tree_data["name"]
     assert data["description"] == tree_data["description"]
-    assert data["latitude"] == tree_data["latitude"]
-    assert data["longitude"] == tree_data["longitude"]
+    assert float(data["latitude"]) == tree_data["latitude"]
+    assert float(data["longitude"]) == tree_data["longitude"]
+
 
 def test_get_trees_with_data(client):
     """Test het ophalen van bomen wanneer er al bomen zijn toegevoegd."""
     client.post("/register", json={"username": "testuser", "password": "testpassword"})
-    login_response = client.post("/login", data={"username": "testuser", "password": "testpassword"})
+    login_response = client.post(
+        "/login", data={"username": "testuser", "password": "testpassword"}
+    )
     token = login_response.json()["data"]["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -203,7 +214,9 @@ def test_get_trees_with_data(client):
         "name": "Birch Tree",
         "description": "A slender birch tree.",
         "latitude": 50.9876,
-        "longitude": 3.4567
+        "longitude": 3.4567,
+        "height": 0,
+        "diameter": 0,
     }
     client.post("/trees", json=tree_data, headers=headers)
 
@@ -213,11 +226,14 @@ def test_get_trees_with_data(client):
     assert len(trees) == 1
     assert trees[0]["name"] == "Birch Tree"
 
+
 def test_delete_tree(client):
     """Test het verwijderen van een boom."""
     # Registreer en log in
     client.post("/register", json={"username": "testuser", "password": "testpassword"})
-    login_response = client.post("/login", data={"username": "testuser", "password": "testpassword"})
+    login_response = client.post(
+        "/login", data={"username": "testuser", "password": "testpassword"}
+    )
     token = login_response.json()["data"]["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -226,20 +242,30 @@ def test_delete_tree(client):
         "name": "Pine Tree",
         "description": "A tall pine tree.",
         "latitude": 52.3456,
-        "longitude": 5.6789
+        "longitude": 5.6789,
+        "height": 0,
+        "diameter": 0,
     }
     create_response = client.post("/trees", json=tree_data, headers=headers)
     assert create_response.status_code == 200
     tree_id = create_response.json()["id"]
-
-    # Verwijder de boom
     delete_response = client.delete(f"/trees/{tree_id}", headers=headers)
+
     assert delete_response.status_code == 200
     assert delete_response.json() == {"message": "Tree deleted successfully"}
 
+
 def test_delete_nonexistent_tree(client):
     """Test het verwijderen van een niet-bestaande boom."""
-    response = client.delete("/trees/999")
-    print(response.json())
+    # Registreer en log in
+    client.post(
+        "/register", json={"username": "testuser2", "password": "testpassword2"}
+    )
+    login_response = client.post(
+        "/login", data={"username": "testuser2", "password": "testpassword2"}
+    )
+    token = login_response.json()["data"]["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.delete("/trees/999", headers=headers)
     assert response.status_code == 404
     assert response.json() == {"detail": "Tree not found"}

@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-from database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from services.token_service import revoke_token, verify_token
 from pydantic import BaseModel
-from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+from database import get_db
 
 router = APIRouter()
 
@@ -22,7 +21,7 @@ def verify_user_token(token: str, db: Session = Depends(get_db)):
     """
     Verify the validity of a token.
     """
-    verify_token(token=token, db=db)
+    verify_token(token, db)
     return standard_response(True, "Token is valid")
 
 
