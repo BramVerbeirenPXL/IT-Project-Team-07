@@ -12,9 +12,13 @@ module.exports = (async () => {
       assetExts: assetExts.filter(ext => ext !== 'svg'),
       sourceExts: [...sourceExts, 'svg'],
       nodeModulesPaths: [
-        path.resolve(__dirname, 'node_modules'),
+        path.resolve(__dirname, 'node_modules'),          // For the `mobile` folder
+        path.resolve(__dirname, '../node_modules'),      // For the root `frontend` folder
       ],
     },
-    watchFolders: [path.resolve(__dirname, '../shared')],
+    watchFolders: [
+      path.resolve(__dirname, '../shared'),             // Ensure shared is watched
+      path.resolve(__dirname, '..'),                    // Watch the root directory as well
+    ],
   };
 })();
