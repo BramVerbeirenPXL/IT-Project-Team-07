@@ -68,10 +68,15 @@ const Navbar = () => {
         }
       </div>
       {isAuthenticated &&
-        <button onClick={() => handleLogoutClick()} className="nav-action-button">LOGOUT</button>
+        <div className="nav-right-div">
+          <h3 className="admin-text">Logged in as Admin</h3>
+          <button onClick={() => handleLogoutClick()} className="nav-action-button">LOGOUT</button>
+        </div>
       }
       {!isAuthenticated &&
-        <button onClick={() => navigate('/')} className="nav-action-button">LOGIN</button>
+        <div className="nav-right-div">
+          <button onClick={() => navigate('/')} className="nav-action-button">LOGIN</button>
+        </div>
       }
     </nav>
   );

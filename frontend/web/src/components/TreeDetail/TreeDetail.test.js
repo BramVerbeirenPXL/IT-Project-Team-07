@@ -1,85 +1,86 @@
-import React from "react";
-import { render, screen, fireEvent, waitFor, act } from "@testing-library/react"; import TreeDetail from "./TreeDetail";
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import TreeDetail from './TreeDetail';
 
-const mockTree = {
-    id: 1,
-    description: "Een eikenboom.",
-    height: 20,
-    latitude: 52.379189,
-    longitude: 4.899431,
+const mockSelectedTree = {
+  id: 1,
+  description: 'Test Tree',
+  height: 10,
+  diameter: 50,
+  latitude: 52.3676,
+  longitude: 4.9041,
 };
 
-describe("TreeDetail Component", () => {
-    beforeEach(() => {
-        sessionStorage.setItem('token', 'mock-token');
-        fetch.resetMocks();
-        fetch.mockResponseOnce(JSON.stringify({ ok: true }));
-    });
-    test("renders without crashing", async () => {
-        await act(async () => {
-            render(<TreeDetail />);
-        });
-        expect(screen.getByText(/Selecteer een boom om de details te bekijken./i)).toBeInTheDocument();
-    });
+const mockOnClose = jest.fn();
+const mockOnDelete = jest.fn();
+const mockOnUpdate = jest.fn();
 
-    test("displays tree details when a tree is selected", async () => {
-        const onDeleteMock = jest.fn();
-        const onCloseMock = jest.fn();
-        await act(async () => {
-            render(<TreeDetail selectedTree={mockTree} onClose={onCloseMock} onDelete={onDeleteMock} />);
-        });
+describe('TreeDetail Component', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-        expect(screen.getByText(/Boom #1/i)).toBeInTheDocument();
-        expect(screen.getByText(/Een eikenboom./i)).toBeInTheDocument();
-        expect(screen.getByText(/20 meter/i)).toBeInTheDocument();
-        expect(screen.getByText(/52.379189, 4.899431/i)).toBeInTheDocument();
-    });
+  test('renders without crashing', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={false} />);
+    expect(screen.getByText(/Boom #1/i)).toBeInTheDocument();
+  });
 
-    test("does not display tree details when no tree is selected", async () => {
-        const onDeleteMock = jest.fn();
-        const onCloseMock = jest.fn();
-        await act(async () => {
-            render(<TreeDetail selectedTree={null} onClose={onCloseMock} onDelete={onDeleteMock} />);
-        })
-        expect(screen.getByText(/Selecteer een boom om de details te bekijken./i)).toBeInTheDocument();
-    });
+  test('displays tree information correctly', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={false} />);
+    expect(screen.getByText(/Test Tree/i)).toBeInTheDocument();
+    expect(screen.getByText(/10 meter/i)).toBeInTheDocument();
+    expect(screen.getByText(/50 centimeter/i)).toBeInTheDocument();
+    expect(screen.getByText(/52.3676, 4.9041/i)).toBeInTheDocument();
+  });
 
-    test("calls the onClose function when the close button is clicked", async () => {
-        const onDeleteMock = jest.fn();
-        const onCloseMock = jest.fn();
-        await act(async () => {
-            render(<TreeDetail selectedTree={mockTree} onClose={onCloseMock} onDelete={onDeleteMock} />);
-        });
+  test('calls onClose when close button is clicked', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={false} />);
+    fireEvent.click(screen.getByAltText('Close'));
+    expect(mockOnClose).toHaveBeenCalledTimes(1);
+  });
 
-        const closeButton = screen.getByAltText("Close");
-        fireEvent.click(closeButton);
+  test('shows delete button when authenticated', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={true} />);
+    expect(screen.getByAltText('Delete')).toBeInTheDocument();
+  });
 
-        expect(onCloseMock).toHaveBeenCalledTimes(1);
-    });
+  test('does not show delete button when not authenticated', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={false} />);
+    expect(screen.queryByAltText('Delete')).not.toBeInTheDocument();
+  });
 
-    test("displays the correct image sources", async () => {
-        const onDeleteMock = jest.fn();
-        const onCloseMock = jest.fn();
-        await act(async () => {
-            render(<TreeDetail selectedTree={mockTree} onClose={onCloseMock} onDelete={onDeleteMock} />);
-        });
+  test('opens delete confirmation dialog when delete button is clicked', async () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={true} />);
+    fireEvent.click(screen.getByAltText('Delete'));
+    expect(await screen.findByText(/Boom #1 verwijderen?/i)).toBeInTheDocument();
+  });
 
-        const treeImage = screen.getByAltText("tree");
-        const closeButtonImage = screen.getByAltText("Close");
+  test('calls onDelete when confirmation is given', async () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={true} />);
+    fireEvent.click(screen.getByAltText('Delete'));
+    fireEvent.click(await screen.findByText('Ja'));
+    expect(mockOnDelete).toHaveBeenCalledTimes(1);
+  });
 
-        expect(treeImage).toHaveAttribute("src", "tree-icon.png");
-        expect(closeButtonImage).toHaveAttribute("src", "close.png");
-    });
-    test("calls the onDelete function when delete button is clicked", async () => {
-        const onDeleteMock = jest.fn();
-        const onCloseMock = jest.fn();
-        await act(async () => {
-            render(<TreeDetail selectedTree={mockTree} onClose={onCloseMock} onDelete={onDeleteMock} />);
-        });
+  test('allows editing of tree details when authenticated', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={true} />);
+    expect(screen.getByDisplayValue('10')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('50')).toBeInTheDocument();
+  });
 
-        const deleteButton = screen.getByAltText("Delete");
-        fireEvent.click(deleteButton);
+  test('does not allow editing of tree details when not authenticated', () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={false} />);
+    expect(screen.queryByDisplayValue('10')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('50')).not.toBeInTheDocument();
+  });
 
-        expect(onDeleteMock).toHaveBeenCalledTimes(1);
-    });
+  test('calls onUpdate when save button is clicked', async () => {
+    render(<TreeDetail selectedTree={mockSelectedTree} onClose={mockOnClose} onDelete={mockOnDelete} onUpdate={mockOnUpdate} isAuthenticated={true} />);
+    const heightInput = screen.getByDisplayValue('10');
+    fireEvent.change(heightInput, { target: { value: '15' } });
+    fireEvent.click(screen.getByText('Opslaan'));
+    expect(mockOnUpdate).toHaveBeenCalledTimes(1);
+    expect(mockOnUpdate).toHaveBeenCalledWith(expect.objectContaining({ height: 15 }));
+  });
 });

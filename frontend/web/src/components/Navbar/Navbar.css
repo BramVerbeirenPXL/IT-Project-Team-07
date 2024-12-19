@@ -37,3 +37,16 @@ nav {
 button:hover {
     cursor: pointer;
 }
+
+.nav-right-div {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between Admin and button */
+}
+
+.admin-text {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+    color: black;
+}

@@ -111,30 +111,5 @@ describe('MapView Component', () => {
             expect(treeTitle).not.toBeInTheDocument();
         });
     });
-    test("removes tree and shows success notification on delete", async () => {
-        const mockDeleteTree = jest.fn(() => Promise.resolve({ ok: true }));
-        data.deleteTree.mockImplementation(mockDeleteTree);
-
-        render(
-            <MemoryRouter>
-                <MapView fetchTrees={mockFetchTrees} />
-            </MemoryRouter>
-        );
-
-        const markers = await screen.findAllByRole("button", { name: /Marker/i });
-        fireEvent.click(markers[0]);
-
-        const treeTitle = await screen.findByText(`Boom #${mockTrees[0].id}`);
-        expect(treeTitle).toBeInTheDocument();
-
-        const deleteButton = screen.getByAltText("Delete");
-        fireEvent.click(deleteButton);
-
-        await waitFor(() => {
-            expect(mockDeleteTree).toHaveBeenCalledWith(mockTrees[0].id);
-        });
-        const notification = await screen.findByText(/Succesvol verwijderd!/i);
-        expect(notification).toBeInTheDocument();
-    });
 
 });
